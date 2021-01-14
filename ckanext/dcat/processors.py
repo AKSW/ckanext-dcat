@@ -115,10 +115,23 @@ class RDFParser(RDFProcessor):
     def next_page(self):
         '''
         Returns the URL of the next page or None if there is no next page
+
+        Bugfix: use new Hydra.Collection/PageCollection and/or Hydra.next/nextPage
         '''
-        for pagination_node in self.g.subjects(RDF.type, HYDRA.PagedCollection):
+        hydraObj = []
+
+        if (None, RDF.type, HYDRA.Collection) in self.g:
+            hydraObj = self.g.subjects(RDF.type, HYDRA.Collection)
+        elif (None, RDF.type, HYDRA.PagedCollection) in self.g:
+            hydraObj = self.g.subjects(RDF.type, HYDRA.PagedCollection)
+
+        for pagination_node in hydraObj:
             for o in self.g.objects(pagination_node, HYDRA.nextPage):
                 return str(o)
+
+            for o in self.g.objects(pagination_node, HYDRA.next):
+                return str(o)
+
         return None
 
 
