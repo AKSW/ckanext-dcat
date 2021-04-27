@@ -456,14 +456,14 @@ Operation mode.
     registry.register(translator, MockTranslator())
 
     if args.mode == 'produce':
-        serializer = RDFSerializer(profiles=args.profile,
+        serializer = RDFSerializer(['stream_dcat'],
                                    compatibility_mode=args.compat_mode)
 
         dataset = json.loads(contents)
         out = serializer.serialize_dataset(dataset, _format=args.format)
         print(out)
     else:
-        parser = RDFParser(profiles=args.profile,
+        parser = RDFParser(profiles=['stream_dcat'],
                            compatibility_mode=args.compat_mode)
 
         parser.parse(contents, _format=args.format)

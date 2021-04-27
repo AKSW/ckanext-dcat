@@ -35,6 +35,7 @@ LOCN = Namespace('http://www.w3.org/ns/locn#')
 GSP = Namespace('http://www.opengis.net/ont/geosparql#')
 OWL = Namespace('http://www.w3.org/2002/07/owl#')
 SPDX = Namespace('http://spdx.org/rdf/terms#')
+#STREAM = Namespace('http://stream-dataspace.net/')
 
 GEOJSON_IMT = 'https://www.iana.org/assignments/media-types/application/vnd.geo+json'
 
@@ -821,6 +822,21 @@ class RDFProfile(object):
         that must be used to reference the dataset when working with the graph.
         '''
         pass
+
+class STREAMDCATProfile(RDFProfile):
+    '''
+    A RDF profile for reading the NOMAD DCAT XML return.
+
+    '''
+
+    def parse_dataset(self, dataset_dict, dataset_ref): # called on each DCAT dataset found when parsing an RDF file, and should return a CKAN dataset
+
+        # Test
+        dataset_dict['extras'].append({'key': 'sample', 'value': 'Kurt'})
+
+        return dataset_dict
+
+#    def graph_from_dataset(self, dataset_dict, dataset_ref): #called when requesting an RDF representation for a dataset, and will need to generate the necessary RDF graph
 
 
 class EuropeanDCATAPProfile(RDFProfile):

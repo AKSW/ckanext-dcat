@@ -43,6 +43,10 @@ setup(
     [ckan.rdf.profiles]
     euro_dcat_ap=ckanext.dcat.profiles:EuropeanDCATAPProfile
     schemaorg=ckanext.dcat.profiles:SchemaOrgProfile
+    stream_dcat=ckanext.dcat.profiles:STREAMDCATProfile
+    
+    [ckanext.dcat.rdf.profiles]
+    ckanext.dcat.rdf.profiles = stream_dcat
 
     [paste.paster_command]
     generate_static = ckanext.dcat.commands:GenerateStaticDCATCommand
