@@ -28,7 +28,7 @@ RDF_PROFILES_ENTRY_POINT_GROUP = 'ckan.rdf.profiles'
 RDF_PROFILES_CONFIG_OPTION = 'ckanext.dcat.rdf.profiles'
 COMPAT_MODE_CONFIG_OPTION = 'ckanext.dcat.compatibility_mode'
 
-DEFAULT_RDF_PROFILES = ['euro_dcat_ap']
+DEFAULT_RDF_PROFILES = ['stream_dcat']
 
 
 
@@ -456,14 +456,14 @@ Operation mode.
     registry.register(translator, MockTranslator())
 
     if args.mode == 'produce':
-        serializer = RDFSerializer(['stream_dcat'],
+        serializer = RDFSerializer(profiles=args.profile,
                                    compatibility_mode=args.compat_mode)
 
         dataset = json.loads(contents)
         out = serializer.serialize_dataset(dataset, _format=args.format)
         print(out)
     else:
-        parser = RDFParser(profiles=['stream_dcat'],
+        parser = RDFParser(profiles=args.profile,
                            compatibility_mode=args.compat_mode)
 
         parser.parse(contents, _format=args.format)
