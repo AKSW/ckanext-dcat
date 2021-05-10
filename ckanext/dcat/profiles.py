@@ -326,7 +326,7 @@ class RDFProfile(object):
         publisher = {}
 
         for agent in self.g.objects(subject, predicate):
-            logging.warning('Agent: $s', agent)
+            #logging.warning('Agent: $s', agent)
             publisher['uri'] = (str(agent) if isinstance(agent,
                                 rdflib.term.URIRef) else '')
 
@@ -837,6 +837,10 @@ class STREAMDCATProfile(RDFProfile):
         dataset_dict['extras'] = []
         dataset_dict['resources'] = []
 
+        logging.warning('Dataset ref: %s', dataset_ref)
+        logging.warning('Graph URI: %s', self.g)
+        for p, o in self.g.predicate_objects(dataset_ref):
+            logging.warning('Graph predicate %s object: %s', p, o)
 
         # Basic fields
         dataset_dict['url'] = 'http://test.de'
@@ -847,6 +851,7 @@ class STREAMDCATProfile(RDFProfile):
                 ('version', OWL.versionInfo),
         ):
             value = self._object_value(dataset_ref, predicate)
+            #logging.warning('field %s: %s', key, value)
             if value:
                 dataset_dict[key] = value
 
@@ -876,6 +881,7 @@ class STREAMDCATProfile(RDFProfile):
                 ('dcat_type', DCT.type),
         ):
             value = self._object_value(dataset_ref, predicate)
+            #logging.warning('field %s: %s', key, value)
             if value:
                 dataset_dict['extras'].append({'key': key, 'value': value})
 
@@ -892,6 +898,24 @@ class STREAMDCATProfile(RDFProfile):
                         {'key': 'contact_{0}'.format(key),
                          'value': contact.get(key)})
 
+        #  Lists
+        for key, predicate, in (
+                ('language', DCT.language),
+                ('theme', DCAT.theme),
+                ('alternate_identifier', ADMS.identifier),
+                ('conforms_to', DCT.conformsTo),
+                ('documentation', FOAF.page),
+                ('related_resource', DCT.relation),
+                ('has_version', DCT.hasVersion),
+                ('is_version_of', DCT.isVersionOf),
+                ('source', DCT.source),
+                ('sample', ADMS.sample),
+                ):
+            values = self._object_value_list(dataset_ref, predicate)
+            if values:
+                dataset_dict['extras'].append({'key': key,
+                                               'value': json.dumps(values)})
+
         # Publisher
         publisher = self._publisher(dataset_ref, DCT.publisher)
         logging.warning('publisher: %s', publisher)
@@ -900,8 +924,6 @@ class STREAMDCATProfile(RDFProfile):
                 dataset_dict['extras'].append(
                     {'key': 'publisher_{0}'.format(key),
                      'value': publisher.get(key)})
-
-        logging.warning('dataset_dict: %s', dataset_dict)
 
         # Temporal
         start, end = self._time_interval(dataset_ref, DCT.temporal)
@@ -912,8 +934,11 @@ class STREAMDCATProfile(RDFProfile):
             dataset_dict['extras'].append(
                 {'key': 'temporal_end', 'value': end})
 
-        # Dataset URI
-        dataset_dict['extras'].append({'key': 'uri', 'value': self._object_value(dataset_ref, DCAT.landingPage)}) # ALWAYS EMPTY
+            # Dataset URI (explicitly show the missing ones)
+            dataset_uri = (str(dataset_ref)
+                           if isinstance(dataset_ref, rdflib.term.URIRef)
+                           else '')
+            dataset_dict['extras'].append({'key': 'uri', 'value': dataset_uri})
 
         # access_rights
         access_rights = self._access_rights(dataset_ref, DCT.accessRights)
@@ -935,9 +960,6 @@ class STREAMDCATProfile(RDFProfile):
         for distribution in self._distributions(dataset_ref):
 
             resource_dict = {}
-
-            # Test
-            dataset_dict['extras'].append({'key': distribution, 'value': self._object_value(distribution, DCT.title)})
 
             #  Simple values
             for key, predicate in (
@@ -1021,6 +1043,8 @@ class STREAMDCATProfile(RDFProfile):
                     extra['value'] = ','.join(
                         sorted(json.loads(extra['value'])))
 
+
+        logging.warning('dataset_dict: %s', dataset_dict)
 
         return dataset_dict
 
