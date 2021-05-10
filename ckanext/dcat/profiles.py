@@ -3,6 +3,7 @@ from past.builtins import basestring
 from builtins import object
 import datetime
 import json
+import logging
 
 import six
 from six.moves.urllib.parse import quote
@@ -325,17 +326,19 @@ class RDFProfile(object):
         publisher = {}
 
         for agent in self.g.objects(subject, predicate):
-
+            logging.warning('Agent: $s', agent)
             publisher['uri'] = (str(agent) if isinstance(agent,
                                 rdflib.term.URIRef) else '')
 
-            publisher['name'] = self._object_value(agent, FOAF.name)
+            publisher['name'] = self._object_value(agent, FOAF.givenName) + ' ' + self._object_value(agent, FOAF.familyName)
 
             publisher['email'] = self._object_value(agent, FOAF.mbox)
 
             publisher['url'] = self._object_value(agent, FOAF.homepage)
 
             publisher['type'] = self._object_value(agent, DCT.type)
+
+            publisher['organization'] = self._object_value(agent, VCARD.organizationName)
 
         return publisher
 
@@ -834,7 +837,9 @@ class STREAMDCATProfile(RDFProfile):
         dataset_dict['extras'] = []
         dataset_dict['resources'] = []
 
+
         # Basic fields
+        dataset_dict['url'] = 'http://test.de'
         for key, predicate in (
                 ('title', DCT.title),
                 ('notes', DCT.description),
@@ -874,11 +879,41 @@ class STREAMDCATProfile(RDFProfile):
             if value:
                 dataset_dict['extras'].append({'key': key, 'value': value})
 
-        # Dataset URI (explicitly show the missing ones)
-        dataset_uri = (str(dataset_ref)
-                       if isinstance(dataset_ref, rdflib.term.URIRef)
-                       else '')
-        dataset_dict['extras'].append({'key': 'uri', 'value': dataset_uri})
+        # Contact details
+        contact = self._contact_details(dataset_ref, DCAT.contactPoint)
+        if not contact:
+            # adms:contactPoint was supported on the first version of DCAT-AP
+            contact = self._contact_details(dataset_ref, ADMS.contactPoint)
+
+        if contact:
+            for key in ('uri', 'name', 'email'):
+                if contact.get(key):
+                    dataset_dict['extras'].append(
+                        {'key': 'contact_{0}'.format(key),
+                         'value': contact.get(key)})
+
+        # Publisher
+        publisher = self._publisher(dataset_ref, DCT.publisher)
+        logging.warning('publisher: %s', publisher)
+        for key in ('uri', 'name', 'email', 'url', 'type', 'organization'):
+            if publisher.get(key):
+                dataset_dict['extras'].append(
+                    {'key': 'publisher_{0}'.format(key),
+                     'value': publisher.get(key)})
+
+        logging.warning('dataset_dict: %s', dataset_dict)
+
+        # Temporal
+        start, end = self._time_interval(dataset_ref, DCT.temporal)
+        if start:
+            dataset_dict['extras'].append(
+                {'key': 'temporal_start', 'value': start})
+        if end:
+            dataset_dict['extras'].append(
+                {'key': 'temporal_end', 'value': end})
+
+        # Dataset URI
+        dataset_dict['extras'].append({'key': 'uri', 'value': self._object_value(dataset_ref, DCAT.landingPage)}) # ALWAYS EMPTY
 
         # access_rights
         access_rights = self._access_rights(dataset_ref, DCT.accessRights)
@@ -900,6 +935,9 @@ class STREAMDCATProfile(RDFProfile):
         for distribution in self._distributions(dataset_ref):
 
             resource_dict = {}
+
+            # Test
+            dataset_dict['extras'].append({'key': distribution, 'value': self._object_value(distribution, DCT.title)})
 
             #  Simple values
             for key, predicate in (
@@ -983,9 +1021,6 @@ class STREAMDCATProfile(RDFProfile):
                     extra['value'] = ','.join(
                         sorted(json.loads(extra['value'])))
 
-
-        # Test
-        dataset_dict['extras'].append({'key': 'sample', 'value': 'Kurt'})
 
         return dataset_dict
 
