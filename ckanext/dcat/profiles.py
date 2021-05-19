@@ -843,7 +843,6 @@ class STREAMDCATProfile(RDFProfile):
             logging.warning('Graph predicate %s object: %s', p, o)
 
         # Basic fields
-        dataset_dict['url'] = 'http://test.de'
         for key, predicate in (
                 ('title', DCT.title),
                 ('notes', DCT.description),
@@ -851,7 +850,7 @@ class STREAMDCATProfile(RDFProfile):
                 ('version', OWL.versionInfo),
         ):
             value = self._object_value(dataset_ref, predicate)
-            #logging.warning('field %s: %s', key, value)
+            logging.warning('field %s uri %s: %s', key, predicate, value)
             if value:
                 dataset_dict[key] = value
 
@@ -934,11 +933,11 @@ class STREAMDCATProfile(RDFProfile):
             dataset_dict['extras'].append(
                 {'key': 'temporal_end', 'value': end})
 
-            # Dataset URI (explicitly show the missing ones)
-            dataset_uri = (str(dataset_ref)
-                           if isinstance(dataset_ref, rdflib.term.URIRef)
-                           else '')
-            dataset_dict['extras'].append({'key': 'uri', 'value': dataset_uri})
+        # Dataset URI (explicitly show the missing ones)
+        dataset_uri = (str(dataset_ref)
+                       if isinstance(dataset_ref, rdflib.term.URIRef)
+                       else '')
+        dataset_dict['extras'].append({'key': 'uri', 'value': dataset_uri})
 
         # access_rights
         access_rights = self._access_rights(dataset_ref, DCT.accessRights)
@@ -976,10 +975,18 @@ class STREAMDCATProfile(RDFProfile):
                 if value:
                     resource_dict[key] = value
 
-            resource_dict['url'] = (self._object_value(distribution,
-                                                       DCAT.downloadURL) or
-                                    self._object_value(distribution,
-                                                       DCAT.accessURL))
+            # Go into accessService if given
+            accessService = self._object(distribution, DCAT.accessService)
+            if accessService:
+                as_description = self._object_value(accessService, DCT.description)
+                if as_description:
+                    resource_dict['description'] = as_description
+                as_url = self._object_value(accessService, DCT.endpointURL)
+                if as_url:
+                    resource_dict['access_url'] = as_url
+
+            resource_dict['url'] = (resource_dict['download_url'] or
+                                    resource_dict['access_url'])
             #  Lists
             for key, predicate in (
                     ('language', DCT.language),
@@ -1045,6 +1052,8 @@ class STREAMDCATProfile(RDFProfile):
 
 
         logging.warning('dataset_dict: %s', dataset_dict)
+
+        logging.warning('-----------------')
 
         return dataset_dict
 
