@@ -838,7 +838,6 @@ class STREAMDCATProfile(RDFProfile):
         dataset_dict['resources'] = []
 
         logging.warning('Dataset ref: %s', dataset_ref)
-        logging.warning('Graph URI: %s', self.g)
         for p, o in self.g.predicate_objects(dataset_ref):
             logging.warning('Graph predicate %s object: %s', p, o)
 
@@ -847,12 +846,16 @@ class STREAMDCATProfile(RDFProfile):
                 ('title', DCT.title),
                 ('notes', DCT.description),
                 ('url', DCAT.landingPage),
+                ('url', DCAT.landing_page),
                 ('version', OWL.versionInfo),
         ):
             value = self._object_value(dataset_ref, predicate)
             logging.warning('field %s uri %s: %s', key, predicate, value)
             if value:
                 dataset_dict[key] = value
+
+        if dataset_dict.get('url'):
+            dataset_dict['extras'].append({'key': 'Website', 'value': dataset_dict.get('url')})
 
         if not dataset_dict.get('version'):
             # adms:version was supported on the first version of the DCAT-AP
@@ -985,8 +988,11 @@ class STREAMDCATProfile(RDFProfile):
                 if as_url:
                     resource_dict['access_url'] = as_url
 
-            resource_dict['url'] = (resource_dict['download_url'] or
-                                    resource_dict['access_url'])
+            resource_dict['url'] = (self._object_value(distribution,
+                                                       DCAT.downloadURL) or
+                                    self._object_value(distribution,
+                                                       DCAT.accessURL))
+
             #  Lists
             for key, predicate in (
                     ('language', DCT.language),
