@@ -338,7 +338,14 @@ class RDFProfile(object):
 
             publisher['type'] = self._object_value(agent, DCT.type)
 
-            publisher['organization'] = self._object_value(agent, VCARD.organizationName)
+            organization = self._object_value(agent, VCARD.organizationName)
+            if (organization == ''):
+                organization = self._object_value(agent, VCARD.organization)
+
+            if (organization == ''):
+                organization = self._object_value(agent, VCARD.hasOrganizationName)
+
+            publisher['organization'] = organization
 
         return publisher
 
