@@ -70,8 +70,7 @@ class TestSchemaOrgProfileSerializeDataset(BaseSerializeTest):
         assert self._triple(g, dataset_ref, SCHEMA.license, dataset['license_url'])
         assert self._triple(g, dataset_ref, SCHEMA.identifier, extras['identifier'])
         url = self._triple(g, dataset_ref, SCHEMA.url, None)[2]
-        assert url
-        assert url == Literal('http://test.ckan.net/dataset/%s' % dataset['name'])
+        assert url == Literal('{}/dataset/{}'.format(config['ckan.site_url'].rstrip('/'), dataset['name']))
 
         # Dates
         assert self._triple(g, dataset_ref, SCHEMA.datePublished, dataset['metadata_created'])
@@ -120,6 +119,43 @@ class TestSchemaOrgProfileSerializeDataset(BaseSerializeTest):
         publisher = self._triple(g, dataset_ref, SCHEMA.publisher, None)[2]
         assert publisher
         assert str(publisher) == extras['publisher_uri']
+        assert self._triple(g, publisher, RDF.type, SCHEMA.Organization)
+        assert self._triple(g, publisher, SCHEMA.name, extras['publisher_name'])
+
+        contact_point = self._triple(g, publisher, SCHEMA.contactPoint, None)[2]
+        assert contact_point
+        assert self._triple(g, contact_point, RDF.type, SCHEMA.ContactPoint)
+        assert self._triple(g, contact_point, SCHEMA.name, extras['publisher_name'])
+        assert self._triple(g, contact_point, SCHEMA.email, extras['publisher_email'])
+        assert self._triple(g, contact_point, SCHEMA.url, extras['publisher_url'])
+        assert self._triple(g, contact_point, SCHEMA.contactType, 'customer service')
+
+    def test_publisher_no_uri(self):
+        dataset = {
+            'id': '4b6fe9ca-dc77-4cec-92a4-55c6624a5bd6',
+            'name': 'test-dataset',
+            'organization': {
+                'id': '',
+                'name': 'publisher1',
+                'title': 'Example Publisher from Org',
+            },
+            'extras': [
+                {'key': 'publisher_name', 'value': 'Example Publisher'},
+                {'key': 'publisher_email', 'value': 'publisher@example.com'},
+                {'key': 'publisher_url', 'value': 'http://example.com/publisher/home'},
+                {'key': 'publisher_type', 'value': 'http://purl.org/adms/publishertype/Company'},
+            ]
+        }
+        extras = self._extras(dataset)
+
+        s = RDFSerializer(profiles=['schemaorg'])
+        g = s.g
+
+        dataset_ref = s.graph_from_dataset(dataset)
+
+        publisher = self._triple(g, dataset_ref, SCHEMA.publisher, None)[2]
+        assert publisher
+        assert isinstance(publisher, BNode)
         assert self._triple(g, publisher, RDF.type, SCHEMA.Organization)
         assert self._triple(g, publisher, SCHEMA.name, extras['publisher_name'])
 
@@ -187,8 +223,8 @@ class TestSchemaOrgProfileSerializeDataset(BaseSerializeTest):
 
         assert sorted(names), ['geography' == 'statistics']
         assert (sorted(urls) == [
-            'http://test.ckan.net/group/geography',
-            'http://test.ckan.net/group/statistics'])
+            '{}/group/geography'.format(config['ckan.site_url'].rstrip('/')),
+            '{}/group/statistics'.format(config['ckan.site_url'].rstrip('/'))])
 
     @pytest.mark.ckan_config('ckan.site_url', 'http://ckan.example.org')
     @pytest.mark.ckan_config('ckan.site_description', 'CKAN Portal')
