@@ -1063,7 +1063,8 @@ class STREAMDCATProfile(RDFProfile):
                     extra['value'] = ','.join(
                         sorted(json.loads(extra['value'])))
 
-
+        dataset_dict['Semantic taxonomy tags'] = []
+        dataset_dict['semantic_taxonomy_tags'] = []
         logging.warning('dataset_dict: %s', dataset_dict)
 
         logging.warning('-----------------')
