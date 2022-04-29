@@ -1051,6 +1051,20 @@ class STREAMDCATProfile(RDFProfile):
 
             dataset_dict['resources'].append(resource_dict)
 
+        # SKOS terms
+        for key, predicate, in (
+                ('Concept', SKOS.Concept),
+                ('Concept Scheme', SKOS.ConceptScheme),
+                ('Definition', SKOS.definition),
+                ('Related', SKOS.related),
+                ('Related Concept', SKOS.semanticRelation),
+                ('Broader Concept', SKOS.broader),
+                ):
+            values = self._object_value_list(dataset_ref, predicate)
+            if values:
+                dataset_dict['extras'].append({'key': key,
+                                               'value': json.dumps(values)})
+
         if self.compatibility_mode:
             # Tweak the resulting dict to make it compatible with previous
             # versions of the ckanext-dcat parsers
